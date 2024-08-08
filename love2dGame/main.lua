@@ -7,6 +7,7 @@ local scaleX, scaleY
 local selectedMenuOption = 1
 local selectedSettingsOption = 1
 local settingsMenuOpened = false
+local loading = true
 
 -- Function to update scaling factors
 local function updateScalingFactors()
@@ -27,16 +28,6 @@ local function startGame()
     debug.clear() -- Clear the debug console when starting the game
 end
 
--- Function to show high scores
-local function showHighScores()
-    -- Your high scores display logic here
-end
-
--- Function to open settings
-local function openSettings()
-    settingsMenuOpened = true
-end
-
 -- Function to quit the game
 local function quitGame()
     love.event.quit()
@@ -48,9 +39,9 @@ local function selectMenuOption()
     if option.action == "startGame" then
         startGame()
     elseif option.action == "showHighScores" then
-        showHighScores()
+        -- Handle high scores
     elseif option.action == "openSettings" then
-        openSettings()
+        settingsMenuOpened = true
     elseif option.action == "quitGame" then
         quitGame()
     end
@@ -71,11 +62,8 @@ local function drawSettingsMenu()
         love.graphics.printf(option.label, 100, y, 200, "left")
         for j, value in ipairs(option.values) do
             local x = 300 + (j - 1) * 100
-            if j == option.selected then
-                love.graphics.setColor(CONFIG.MENU.button.selectedColour)
-            else
-                love.graphics.setColor(CONFIG.MENU.button.defaultColour)
-            end
+            love.graphics.setColor(j == option.selected and CONFIG.MENU.button.selectedColour or
+            CONFIG.MENU.button.defaultColour)
             love.graphics.rectangle("fill", x, y, 80, 30)
             love.graphics.setColor(CONFIG.MENU.button.textColour)
             love.graphics.printf(value, x, y + 5, 80, "center")
@@ -119,9 +107,17 @@ local function drawMenu()
     end
 end
 
+-- Function to draw the loading screen
+local function drawLoadingScreen()
+    love.graphics.setFont(love.graphics.newFont(24))
+    love.graphics.printf("Loading...", 0, love.graphics.getHeight() / 2, love.graphics.getWidth() / 2, "center")
+end
+
 -- Love2D draw callback
 function love.draw()
-    if Game.isRunning then
+    if loading then
+        drawLoadingScreen()
+    elseif Game.isRunning then
         Game:draw()
     else
         drawMenu()
@@ -135,9 +131,16 @@ function love.load()
     love.window.setMode(CONFIG.WINDOW.windowWidth, CONFIG.WINDOW.windowHeight)
     love.window.setTitle(CONFIG.WINDOW.windowTitle)
     updateScalingFactors()
+
+    -- Simulate loading assets
+    --love.graphics.setBackgroundColor(0, 0, 0)
+    --love.timer.sleep(2) -- Simulate loading time (adjust as needed)
+
     Game:init()
     TextureShader:load()
     debug.log("Game loaded")
+
+    loading = false -- Set loading to false once done
 end
 
 -- Love2D update callback (dt = time elapsed)
@@ -236,9 +239,9 @@ function love.mousepressed(x, y, button, istouch, presses)
     debug.log("Mouse button pressed: " .. button) -- Log the mouse button press
 
     if Game.isRunning then
-        if button == 1 then -- Left mouse button for shooting
+        if button == 1 then                           -- Left mouse button for shooting
             Game:shoot()
-            debug.log("LMB Clicked: Firing weapon: " .. Game.player.currentWeapon)
+            debug.log("LMB Clicked: Firing weapon: ") -- This needs implementing: Game.player.currentWeapon
         end
     else
         if button == 1 then
