@@ -1,10 +1,8 @@
-local TextureShader = {
-    textureDebugMessages = {}
-}
+local TextureShader = {}
 
 -- Function to add debug messages
 function TextureShader:addDebugMessage(message)
-    table.insert(self.textureDebugMessages, message)
+    table.insert(_GdebugMessages, message)
 end
 
 -- Function to create shader
@@ -39,10 +37,17 @@ local function generateTexture(width, height, colorFunc)
     return love.graphics.newImage(imageData)
 end
 
+-- Function to load textures
 function TextureShader:load()
-    self.logFileName = os.date("%Y-%m-%d_%H-%M-%S") .. "_debug.log"
-    self.floorTexture = generateTexture(64, 64, function() return 0.3, 0.3, 0.3, 1 end)
-    self.ceilingTexture = generateTexture(64, 64, function() return 0.5, 0.5, 0.5, 1 end)
+    self.logFileName = os.date("%Y-%m-%d_%H-%M-%S") .. "_Texture_Shader_Debug_debug.log"
+    self.floorTexture = generateTexture(64, 64, function(x, y)
+        local color = ((x + y) % 16 < 8) and 0.3 or 0.35
+        return color, color, color, 1
+    end)
+    self.ceilingTexture = generateTexture(64, 64, function(x, y)
+        local color = ((x + y) % 16 < 8) and 0.5 or 0.55
+        return color, color, color, 1
+    end)
     self.wallTexture = generateTexture(64, 64, function(x, y)
         local color = ((x + y) % 8 < 4) and 0.4 or 0.2
         return color, color, color, 1
@@ -55,9 +60,11 @@ function TextureShader:load()
         local color = (x % 4 == 0 or y % 4 == 0) and 0.8 or 0.3
         return color, 0, 0, 1
     end)
+    self.textureDebugMessages = {}
     self:addDebugMessage("Textures loaded")
 end
 
+-- Getter functions for textures
 function TextureShader:getFloor() return self.floorTexture end
 
 function TextureShader:getCeiling() return self.ceilingTexture end
@@ -68,29 +75,35 @@ function TextureShader:getGun() return self.gunTexture end
 
 function TextureShader:getEnemy() return self.enemyTexture end
 
+-- Function to draw the game world
 function TextureShader:drawWorld(player, map, fov)
+    local startTime = math.floor(love.timer.getTime() * 1000000)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
     local numRays = w
-    local maxDepth = 20
+    local maxDepth = 100
     local deltaAngle = fov / numRays
 
     self:addDebugMessage("Player position: " ..
-    tostring(player.position.x) .. ", " .. tostring(player.position.y) .. ", " .. tostring(player.position.z))
-    self:addDebugMessage("Player rotation: " .. tostring(player.rotation))
+        "X:" .. tostring(player.position.x) ..
+        ", Y:" .. tostring(player.position.y) ..
+        ", Z:" .. tostring(player.position.z) ..
+        ", Rotation: " .. tostring(player.rotation.z) ..
+        ", Pitch:" .. tostring(player.rotation.x) ..
+        ", Roll:" .. tostring(player.rotation.y))
 
     local shader = self:createShader()
     love.graphics.setShader(shader)
 
-    for i = 0, numRays - 1 do
-        local rayAngle = player.rotation - fov / 2 + deltaAngle * i
+    for i = 1, numRays - 1 do
+        local rayAngle = player.rotation.z - fov / 2 + deltaAngle * i
         local distanceToWall = 0
         local hitWall = false
         local eyeX = math.cos(rayAngle)
         local eyeY = math.sin(rayAngle)
 
         while not hitWall and distanceToWall < maxDepth do
-            distanceToWall = distanceToWall + 0.001
+            distanceToWall = distanceToWall + 0.01 -- Adjusted increment for faster ray tracing
             local testX = math.floor(player.position.x + eyeX * distanceToWall)
             local testY = math.floor(player.position.y + eyeY * distanceToWall)
 
@@ -104,23 +117,29 @@ function TextureShader:drawWorld(player, map, fov)
 
         local lineHeight = (1 / distanceToWall) * h
 
-        -- Adjust line height based on player's z position
-        local verticalAdjustment = player.position.z *
-        100                                                -- Increase the scaling factor to exaggerate effect for testing
+        -- Adjust line height based on player's pitch
+        local verticalAdjustment = player.rotation.x * 100
         local drawStart = math.max(-lineHeight / 2 + h / 2 - verticalAdjustment, 0)
         local drawEnd = math.min(lineHeight / 2 + h / 2 - verticalAdjustment, h)
+
+        -- Adjust vertical position based on player's Z position
+        drawStart = drawStart + player.position.z * 50
+        drawEnd = drawEnd + player.position.z * 50
 
         local shade = 1 - (distanceToWall / maxDepth)
         love.graphics.setColor(shade, shade, shade)
         love.graphics.rectangle("fill", i * (w / numRays), drawStart, w / numRays, drawEnd - drawStart)
-        self:addDebugMessage("Ray " ..
-        i .. ": Distance to wall " .. distanceToWall .. ", Draw Start: " .. drawStart .. ", Draw End: " .. drawEnd)
     end
 
     love.graphics.setShader()
-    self:addDebugMessage("World drawn")
+    local finishTime = (math.floor(love.timer.getTime() * 1000000) - startTime)
+    self:addDebugMessage("World drawn. Number of rays: " ..
+        numRays ..
+        ". Time to draw: " ..
+        finishTime .. " Micro Seconds." .. " Current delta time: " .. math.floor(love.timer.getDelta() * 1000000))
 end
 
+-- Function to draw FPS
 function TextureShader:drawFPS()
     local fps = love.timer.getFPS()
     local color = { 0, 1, 0 }
@@ -130,19 +149,23 @@ function TextureShader:drawFPS()
         color = { 1, 0.5, 0 }
     end
     love.graphics.setColor(color)
-    love.graphics.print("FPS: " .. fps, 10, 10)
+    local y = (love.graphics.getWidth() - 60)
+    love.graphics.print("FPS: " .. fps, y, 10)
 end
 
+-- Function to draw gun
 function TextureShader:drawGun()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(self:getGun(), love.graphics.getWidth() - 64, love.graphics.getHeight() - 64)
 end
 
+-- Function to draw enemy
 function TextureShader:drawEnemy(x, y)
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(self:getEnemy(), x, y)
 end
 
+-- Function to draw debug messages
 function TextureShader:drawDebugMessages()
     love.graphics.setColor(1, 1, 1)
     local y = 30
