@@ -13,7 +13,7 @@ local loading = true
 local function updateScalingFactors()
     scaleX = love.graphics.getWidth() / CONFIG.WINDOW.defaultWidth
     scaleY = love.graphics.getHeight() / CONFIG.WINDOW.defaultHeight
-    debug.log("Scale X: " .. scaleX .. ". Scale Y: " .. scaleY)
+    table.insert(_GdebugMessages, "Scale X: " .. scaleX .. ". Scale Y: " .. scaleY)
 end
 
 -- Function to handle resolution change
@@ -127,20 +127,14 @@ end
 
 -- Love2D load callback
 function love.load()
-    debug.log("Game loading")
+    table.insert(_GdebugMessages, "Game loading")
     love.window.setMode(CONFIG.WINDOW.windowWidth, CONFIG.WINDOW.windowHeight)
     love.window.setTitle(CONFIG.WINDOW.windowTitle)
     updateScalingFactors()
-
-    -- Simulate loading assets
-    --love.graphics.setBackgroundColor(0, 0, 0)
-    --love.timer.sleep(2) -- Simulate loading time (adjust as needed)
-
     Game:init()
     TextureShader:load()
-    debug.log("Game loaded")
-
-    loading = false -- Set loading to false once done
+    table.insert(_GdebugMessages, "Game loaded")
+    loading = false
 end
 
 -- Love2D update callback (dt = time elapsed)
@@ -152,13 +146,13 @@ end
 
 -- Love2D keypressed callback for menu navigation and game control
 function love.keypressed(key)
-    debug.log("Key pressed: " .. key) -- Log the key press
+    table.insert(_GdebugMessages, "Key pressed: " .. key) -- Log the key press
 
     if Game.isRunning then
         if key == "escape" then
             Game.isRunning = false -- Exit to main menu
             love.mouse.setRelativeMode(false)
-            debug.log("Game paused")
+            table.insert(_GdebugMessages, "Game paused")
         end
     else
         if key == "up" then
@@ -213,7 +207,7 @@ end
 function love.mousemoved(x, y, dx, dy, istouch)
     if Game.isRunning then
         Game:mouseMoved(dx, dy)
-        debug.log(string.format("Mouse moved: dx = %d, dy = %d", dx, dy))
+        table.insert(_GdebugMessages, string.format("Mouse moved: dx = %d, dy = %d", dx, dy))
     else
         if settingsMenuOpened then
             for i = 1, #CONFIG.MENU.settings.options do
@@ -236,12 +230,12 @@ end
 
 -- Love2D mousepressed callback for shooting and menu selection
 function love.mousepressed(x, y, button, istouch, presses)
-    debug.log("Mouse button pressed: " .. button) -- Log the mouse button press
+    table.insert(_GdebugMessages, "Mouse button pressed: " .. button)
 
     if Game.isRunning then
-        if button == 1 then                           -- Left mouse button for shooting
+        if button == 1 then
             Game:shoot()
-            debug.log("LMB Clicked: Firing weapon: ") -- This needs implementing: Game.player.currentWeapon
+            table.insert(_GdebugMessages, "LMB Clicked: Firing weapon: ")
         end
     else
         if button == 1 then
@@ -267,7 +261,7 @@ function love.mousepressed(x, y, button, istouch, presses)
                     end
                 end
             else
-                if x > 10 and x < 160 and y > love.graphics.getHeight() - 40 and y < love.graphics.getHeight() - 10 then
+                if x > 10 and x < 160 and y > love.graphics.getHeight() - 40 and y < love.graphics.getHeight() - 10 then -- invisible debug log save button (bottom right of main menu screen)
                     debug.save()
                 else
                     selectMenuOption()

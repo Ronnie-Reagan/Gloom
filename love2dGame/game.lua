@@ -28,7 +28,7 @@ function Game:init()
     self.enemies = {}
     self:initEnemies()
     self.map = CONFIG.LEVELS.maps[1].layout
-    self.gameDebugMessages = { "Game initialized" }
+    table.insert(_GdebugMessages, "Game initialized")
     self.weaponAmmo = CONFIG.WEAPONS.PISTOL.magazine + 1
     self.floor = { x = 0 } -- Define the floor level
 
@@ -77,6 +77,7 @@ function Game:checkEnemyCollisions()
         if Vector3.distance(self.player.position, enemy.position) < 1 then
             self.player.health = self.player.health - enemy.damage
             if self.player.health <= 0 then
+                table.insert(_Gdebug, "YOU ARE DEAD")
                 self:gameOver()
             end
         end
@@ -87,7 +88,7 @@ end
 function Game:start()
     self.isRunning = true
     love.mouse.setRelativeMode(true)
-    debug.log("Game started")
+    table.insert(_GdebugMessages, "Game started")
 end
 
 -- Update game state
@@ -112,21 +113,41 @@ function Game:updatePlayer(dt)
         player.running = false
     end
 
+    local keys = {}
     -- Horizontal movement
     local move = Vector3.new(0, 0, 0)
     if love.keyboard.isDown("w") then
+        table.insert(keys, "W Key Pressed")
         move = Vector3.new(math.cos(player.rotation.z), math.sin(player.rotation.z), 0)
-    elseif love.keyboard.isDown("s") then
+    end
+    if love.keyboard.isDown("s") then
+        table.insert(keys, "S Key Pressed")
         move = Vector3.new(-math.cos(player.rotation.z), -math.sin(player.rotation.z), 0)
-    elseif love.keyboard.isDown("d") then
+    end
+    if love.keyboard.isDown("d") then
+        table.insert(keys, "D Key Pressed")
         move = Vector3.new(-math.sin(player.rotation.z), math.cos(player.rotation.z), 0)
-    elseif love.keyboard.isDown("a") then
+    end
+    if love.keyboard.isDown("a") then
+        table.insert(keys, "A Key Pressed")
         move = Vector3.new(math.sin(player.rotation.z), -math.cos(player.rotation.z), 0)
     end
 
+    
     -- Apply movement based on velocity
-    player.velocity = move:multiply(player.speed)
+    player.velocity = move:multiply(moveSpeed * 75)
     player.position = player.position:add(player.velocity:multiply(dt))
+
+
+    local message = tostring(
+        "Player Velocity: X: " .. player.velocity.x .. ", Y: " .. player.velocity.y .. ", Z: " .. player.velocity.z ..
+        "\nPlayer Position: X: " .. player.position.x .. ", Y: " .. player.position.y .. ", Z: " .. player.position.z
+    )
+
+    for i, key in ipairs(keys) do
+        message = tostring(key .. message)
+    end
+    table.insert(_GdebugMessages, message)
 
     -- Jumping logic
     if player.isGrounded and love.keyboard.isDown("space") then
@@ -155,7 +176,7 @@ end
 function Game:mouseMoved(dx, dy)
     self.player.rotation.z = (self.player.rotation.z + dx * CONFIG.MENU.settings.mouseSensitivityX) % (2 * math.pi)
     self.player.rotation.x = self.player.rotation.x + dy * CONFIG.MENU.settings.mouseSensitivityY
-    debug.log("Mouse moved: dx = " .. dx .. ", dy = " .. dy)
+    table.insert(_GdebugMessages, "Mouse moved: dx = " .. dx .. ", dy = " .. dy)
 end
 
 -- Draw game elements
@@ -172,7 +193,7 @@ end
 function Game:drawEnemies()
     for _, enemy in ipairs(self.enemies) do
         TextureShader:drawEnemy(enemy.position.x, enemy.position.y)
-        debug.log("Enemy Location: X: " .. enemy.position.x .. ". Y: " .. enemy.position.y)
+        table.insert(_GdebugMessages, "Enemy Location: X: " .. enemy.position.x .. ". Y: " .. enemy.position.y)
     end
 end
 
@@ -227,7 +248,7 @@ end
 function Game:gameOver()
     self.isRunning = false
     love.mouse.setRelativeMode(false)
-    debug.log("Game Over")
+    table.insert(_GdebugMessages, "Game Over")
 end
 
 return Game

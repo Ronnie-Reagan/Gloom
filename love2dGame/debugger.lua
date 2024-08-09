@@ -2,6 +2,7 @@
 _Gdebug = {}
 _GmaxdebugMessages = 2000
 _GdebugMessages = {}
+local debugMode = true
 
 -- Log a message to the debug console and print it to the standard output
 function debug.log(message)
@@ -30,11 +31,11 @@ end
 
 -- Draw debug messages on the screen if debug mode is enabled
 function debug.draw()
-    if CONFIG and CONFIG.GAME and CONFIG.GAME.debug then
+    if debugMode then
         love.graphics.setColor(1, 1, 1)
         love.graphics.setFont(love.graphics.newFont(12))
         for i, message in ipairs(_GdebugMessages) do
-            love.graphics.print(message, 10, 10 + (i - 1) * 15)
+            love.graphics.print(message, 10, 10 + ((i - 1) * 15))
         end
     end
 end
